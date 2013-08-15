@@ -25,5 +25,12 @@ StateManager::StateManager(const boost::filesystem::path &path) : _basePath(path
     _categoryManager.addInitializationEvent("nowa");
     _categoryManager.addInitializationEvent("stara");
 
+    _categoryManager.addAcceptableStateTransition("nowa","do prania");
+    _categoryManager.addAcceptableStateTransition("stara","do prania");
+
+    _categoryManager.addAcceptableStateTransition("do prania","z prania");
+    _categoryManager.addAcceptableStateTransition("z prania","do prania");
+
+
     _globalState=parseEventsForGlobalState(path/"zdarzenia",_categoryManager);
 }

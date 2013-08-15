@@ -44,3 +44,13 @@ bool EventCategoryManager::isInitializationEvent(const std::string& event) const
     return std::find(_initializationEvents.begin(),_initializationEvents.end(),
                      event)!=_initializationEvents.end();
 }
+
+void EventCategoryManager::addAcceptableStateTransition(const std::string& from, const std::string& to)
+{
+    _acceptableStateTransitions.insert({from,to});
+}
+
+bool EventCategoryManager::isAcceptableStateTransition(const std::string& from, const std::string& to) const
+{
+    return _acceptableStateTransitions.find({from,to})!=_acceptableStateTransitions.end();
+}

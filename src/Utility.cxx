@@ -27,6 +27,19 @@ IdSet parseIdSetFile(const boost::filesystem::path& path)
     return result;
 }
 
+boost::gregorian::date extractDateFromPath(const boost::filesystem::path& path)
+{
+    auto preparedPath=path;
+    static const boost::regex regex(".*/([[:digit:]]+)/([[:digit:]]+)/([[:digit:]]+)",boost::regex_constants::extended);
+    boost::smatch match;
+    boost::regex_match(preparedPath.string(),match,regex);
+    using boost::lexical_cast;
+    return boost::gregorian::date(lexical_cast<uint_fast32_t>(match[1].str()),
+                                  lexical_cast<uint_fast32_t>(match[2].str()),
+                                  lexical_cast<uint_fast32_t>(match[3].str())
+                                 );
+}
+
 std::pair<boost::regex,HandlerFunction>
 getImplementationForEvent(const std::string& event,const std::string &filenameRegex)
 {
@@ -34,7 +47,9 @@ getImplementationForEvent(const std::string& event,const std::string &filenameRe
     return {regex,[regex,event](const boost::filesystem::path &file) {
         boost::smatch match;
         boost::regex_match(file.filename().string(),match,regex);
-        return FileSummary {match[1].str(),event,parseIdSetFile(file)};
+        return FileSummary {match[1].str(),event,parseIdSetFile(file),
+                            extractDateFromPath(file.parent_path())
+                           };
     }
            };
 }
@@ -55,15 +70,16 @@ DaySummary parseDay(const boost::filesystem::path& path,
                     const EventCategoryManager& categoryManager)
 {
     DaySummary result;
+    result.first=extractDateFromPath(path);
     using namespace boost::filesystem;
     for(auto i=directory_iterator(path); i!=directory_iterator(); ++i)
     {
         try
         {
             auto fileSummary= categoryManager.handleFile(*i);
-            if(result.find(fileSummary.categoryName)==result.end())
-                result[fileSummary.categoryName]=CategorySummary(categoryManager.eventComparator());
-            result[fileSummary.categoryName][fileSummary.eventName]=fileSummary.idSet;
+            if(result.second.find(fileSummary.categoryName)==result.second.end())
+                result.second[fileSummary.categoryName]=CategorySummary(categoryManager.eventComparator());
+            result.second[fileSummary.categoryName][fileSummary.eventName]=fileSummary.idSet;
         }
         catch(std::runtime_error e)
         {
@@ -117,18 +133,23 @@ void insertDaySummaryIntoGlobalState(GlobalState& globalState,
                                      const DaySummary& daySummary,
                                      const EventCategoryManager& categoryManager)
 {
-    for(auto i : daySummary)
+    for(auto i : daySummary.second)
     {
         auto category=i.first;
         insertCategorySummaryIntoCategoryState(globalState[category],
                                                i.second,
-                                               categoryManager);
+                                               categoryManager,
+                                               daySummary.first
+                                              );
     }
 }
 
+#include <boost/date_time/gregorian/gregorian.hpp>
+
 void insertCategorySummaryIntoCategoryState(CategoryState& categoryState,
         const CategorySummary& categorySummary,
-        const EventCategoryManager& categoryManager)
+        const EventCategoryManager& categoryManager,
+        const boost::gregorian::date &date)
 {
     for(auto i : categorySummary)
     {
@@ -141,12 +162,16 @@ void insertCategorySummaryIntoCategoryState(CategoryState& categoryState,
                     throw std::runtime_error("Reinitialization of "+
                                              std::to_string(j)+" as "+i.first);
                 }
-                categoryState[j]=i.first;
+                categoryState[j]= {{date,i.first}};
             }
         }
         else
         {
-            std::cout<<i.first<<'\n';
+            for(auto j : i.second)
+            {
+                if(!categoryManager.isAcceptableStateTransition())
+                    throw std::runtime_error("Forbiden transition from "+" to ");
+            }
         }
     }
 }

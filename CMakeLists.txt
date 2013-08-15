@@ -2,7 +2,7 @@ project(StateManager)
 cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_CXX_FLAGS "-std=c++11")
-find_package(Boost REQUIRED filesystem regex)
+find_package(Boost REQUIRED filesystem regex system)
 add_definitions(-DBOOST_FILESYSTEM_DYN_LINK)
 
 set(StateManager_SRCS main.cpp)

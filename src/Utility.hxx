@@ -8,10 +8,13 @@
 
 #include <boost/regex.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/date_time/gregorian/gregorian_types.hpp>
 
 class EventCategoryManager;
 
 IdSet parseIdSetFile(const boost::filesystem::path &path);
+
+boost::gregorian::date extractDateFromPath(const boost::filesystem::path &path);
 
 std::pair<boost::regex,HandlerFunction>
 getImplementationForEvent(const std::string& event, const std::string& filenameRegex);
@@ -42,6 +45,7 @@ void insertDaySummaryIntoGlobalState(GlobalState &globalState,
 
 void insertCategorySummaryIntoCategoryState(CategoryState &categoryState,
         const CategorySummary &categorySummary,
-        const EventCategoryManager &categoryManager);
+        const EventCategoryManager &categoryManager,
+        const boost::gregorian::date &date);
 
 #endif // UTILITY_HXX
